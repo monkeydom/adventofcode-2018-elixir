@@ -1,27 +1,45 @@
+#! /usr/bin/env elixir
+
 defmodule Day1 do
   def final_frequency(input) do
     input
     |> String.split("\n", trim: true)
-    |> sum_lines()
+    |> sum_lines(0)
   end
 
-  defp sum_lines(lines) do
-    lines
+  defp sum_lines([line | lines], current_frequency) do
+    new_frequency = String.to_integer(line) + current_frequency
+    sum_lines(lines, new_frequency)
   end
+
+  defp sum_lines([], result), do: result
 end
 
-ExUnit.start()
+case System.argv() do
+  ["--test"] ->
+    ExUnit.start()
 
-defmodule Day1Test do
-  use ExUnit.Case
+    defmodule Day1Test do
+      use ExUnit.Case
 
-  import Day1
+      import Day1
 
-  test "final_frequency" do
-    assert final_frequency("""
-           +1
-           +1
-           +1
-           """) == 3
-  end
+      test "final_frequency" do
+        assert final_frequency("""
+               +1
+               +1
+               +1
+               """) == 3
+      end
+    end
+
+  [input_file] ->
+    input_file
+    |> File.read!()
+    |> Day1.final_frequency()
+    |> IO.puts()
+
+  _ ->
+    IO.puts(:stderr, "Usage: Day1.exs [--file | filename]")
+    System.halt(1)
 end
