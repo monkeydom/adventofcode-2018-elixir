@@ -1,18 +1,16 @@
 #! /usr/bin/env elixir
 
 defmodule Day1 do
+  def final_frequency(input) when is_binary(input) do
+    {:ok, io} = StringIO.open(input)
+    final_frequency(IO.stream(io, :line))
+  end
+
   def final_frequency(input) do
     input
-    |> String.split("\n", trim: true)
-    |> sum_lines(0)
+    |> Stream.map(fn string -> string |> String.trim() |> String.to_integer() end)
+    |> Enum.sum()
   end
-
-  defp sum_lines([line | lines], current_frequency) do
-    new_frequency = String.to_integer(line) + current_frequency
-    sum_lines(lines, new_frequency)
-  end
-
-  defp sum_lines([], result), do: result
 end
 
 case System.argv() do
@@ -35,7 +33,7 @@ case System.argv() do
 
   [input_file] ->
     input_file
-    |> File.read!()
+    |> File.stream!([], :line)
     |> Day1.final_frequency()
     |> IO.puts()
 
