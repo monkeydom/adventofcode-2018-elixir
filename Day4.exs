@@ -22,23 +22,24 @@ defmodule WorkerDay do
   end
 
   def best_minute(days) do
-    {minute, _count} =
-      days
-      |> Enum.reduce(%{}, fn day, map ->
-        day.events
-        |> Enum.chunk_every(2)
-        |> Enum.reduce(map, fn [{sleep, _}, {wake, _}], map ->
-          sleep..(wake - 1)
-          |> Enum.reduce(map, fn minute, map ->
-            Map.update(map, minute, 1, &(&1 + 1))
-          end)
+    days
+    #    |> IO.inspect(label: "Days")
+    |> Enum.reduce(%{}, fn day, map ->
+      day.events
+      |> Enum.chunk_every(2)
+      |> Enum.reduce(map, fn [{sleep, _}, {wake, _}], map ->
+        sleep..(wake - 1)
+        |> Enum.reduce(map, fn minute, map ->
+          Map.update(map, minute, 1, &(&1 + 1))
         end)
       end)
-      |> Enum.to_list()
-      |> Enum.sort()
-      |> Enum.max_by(fn {_, count} -> count end)
-
-    minute
+    end)
+    |> Enum.to_list()
+    |> Enum.sort()
+    |> case do
+      [] -> {0, 0}
+      minutes -> Enum.max_by(minutes, fn {_, count} -> count end)
+    end
   end
 end
 
@@ -73,7 +74,35 @@ defmodule Day4 do
         end
       end)
 
-    WorkerDay.best_minute(days) * hd(days).id
+    {minute, _count} = WorkerDay.best_minute(days)
+    minute * hd(days).id
+  end
+
+  def strategy2_guard_times_minute(input) do
+    {id, {_, {minute, _count}, _days}} =
+      input
+      |> trim_map()
+      |> Stream.map(&parse_entry/1)
+      |> Enum.reduce(%{}, fn entry, map ->
+        Map.update(map, entry.date, entry, fn prev ->
+          WorkerDay.merge(entry, prev)
+        end)
+      end)
+      |> Enum.reduce(%{}, fn {_, day}, map ->
+        sleep_minutes = WorkerDay.sleep_minutes(day)
+
+        Map.update(map, day.id, {sleep_minutes, [day]}, fn {prev_minutes, prev} ->
+          {prev_minutes + sleep_minutes, [day | prev]}
+        end)
+      end)
+      #      |> IO.inspect(label: "By Worker:")
+      |> Enum.map(fn {k, {minutes, days}} ->
+        {k, {minutes, WorkerDay.best_minute(days), days}}
+      end)
+      #      |> IO.inspect(label: "By Worker Including best minutes:")
+      |> Enum.max_by(fn {_, {_, {_, count}, _}} -> count end)
+
+    minute * id
   end
 
   defp parse_entry(line) do
@@ -136,12 +165,12 @@ case System.argv() do
       end
 
       test "Part 1" do
-        assert guard_times_minute(test_stream()) == 240
+        assert guard_times_minute(test_stream()) == 10 * 24
       end
 
-      #      test "Part 2" do
-      #        assert non_overlapping_id(test_stream()) == 3
-      #      end
+      test "Part 2" do
+        assert strategy2_guard_times_minute(test_stream()) == 99 * 45
+      end
     end
 
   [input_file] ->
@@ -149,6 +178,11 @@ case System.argv() do
     |> File.stream!([], :line)
     |> Day4.guard_times_minute()
     |> IO.inspect(label: "Result Part 1")
+
+    input_file
+    |> File.stream!([], :line)
+    |> Day4.strategy2_guard_times_minute()
+    |> IO.inspect(label: "Result Part 2")
 
   _ ->
     IO.puts(:stderr, "Usage: #{Path.basename(__ENV__.file)} [--test | filename]")
