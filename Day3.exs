@@ -18,21 +18,25 @@ defmodule Day3 do
   end
 
   def overlapping_inches(input) do
-    input
-    |> trim_map()
-    |> Enum.map(&parse_rect/1)
-    |> Enum.reduce(%{}, fn {id, x_range, y_range}, acc ->
-      Enum.reduce(y_range, acc, fn y, acc ->
-        Enum.reduce(x_range, acc, fn x, acc ->
-          Map.update(acc, {x, y}, [id], fn p -> [id | p] end)
+    {overlap, _map} =
+      input
+      |> trim_map()
+      |> Enum.map(&parse_rect/1)
+      |> Enum.reduce({0, %{}}, fn {id, x_range, y_range}, acc ->
+        Enum.reduce(y_range, acc, fn y, acc ->
+          Enum.reduce(x_range, acc, fn x, {overlap, map} ->
+            position = {x, y}
+
+            case Map.fetch(map, position) do
+              {:ok, [_el] = value} -> {overlap + 1, Map.put(map, position, [id | value])}
+              {:ok, value} -> {overlap, Map.put(map, position, [id | value])}
+              _ -> {overlap, Map.put(map, position, [id])}
+            end
+          end)
         end)
       end)
-    end)
-    #     |> IO.inspect()
-    |> Enum.count(fn
-      {_, list} when length(list) > 1 -> true
-      _ -> false
-    end)
+
+    overlap
   end
 
   def non_overlapping_id(_input) do
