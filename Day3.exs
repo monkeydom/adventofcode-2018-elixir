@@ -39,8 +39,33 @@ defmodule Day3 do
     overlap
   end
 
-  def non_overlapping_id(_input) do
-    9
+  def non_overlapping_id(input) do
+    {non_overlapping_ids, _map} =
+      input
+      |> trim_map()
+      |> Enum.map(&parse_rect/1)
+      |> Enum.reduce({MapSet.new(), %{}}, fn {id, x_range, y_range}, {non_overlapping_ids, map} ->
+        Enum.reduce(y_range, {MapSet.put(non_overlapping_ids, id), map}, fn y, acc ->
+          Enum.reduce(x_range, acc, fn x, {non_overlapping_ids, map} ->
+            position = {x, y}
+
+            case Map.fetch(map, position) do
+              {:ok, [el] = value} ->
+                {MapSet.delete(MapSet.delete(non_overlapping_ids, el), id),
+                 Map.put(map, position, [id | value])}
+
+              {:ok, value} ->
+                {MapSet.delete(non_overlapping_ids, id), Map.put(map, position, [id | value])}
+
+              _ ->
+                {non_overlapping_ids, Map.put(map, position, [id])}
+            end
+          end)
+        end)
+      end)
+
+    [result] = MapSet.to_list(non_overlapping_ids)
+    result
   end
 end
 
