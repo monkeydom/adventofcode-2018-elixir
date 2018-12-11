@@ -12,9 +12,13 @@ defmodule Day5 do
 
   def find_best_removal(input) do
     candidate_list(input)
-    |> Enum.reduce([], fn c, acc ->
-      [{<<c>>, input |> remove(c) |> react_polymer |> byte_size()} | acc]
-    end)
+    |> Task.async_stream(
+      fn c ->
+        {<<c>>, input |> remove(c) |> react_polymer |> byte_size()}
+      end,
+      ordered: false
+    )
+    |> Stream.map(fn {:ok, res} -> res end)
     |> Enum.sort()
     |> IO.inspect(label: "Reduction results")
     |> Enum.min_by(fn {_, v} -> v end)
