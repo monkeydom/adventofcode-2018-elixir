@@ -6,9 +6,33 @@ defmodule Day3 do
     |> Stream.map(fn string -> string |> String.trim() end)
   end
 
+  defp parse_rect(rect_string) do
+    [id, left, top, width, height] =
+      rect_string
+      #    |> IO.inspect()
+      |> String.split(["#", " @ ", "x", ": ", ","], trim: true)
+      |> Enum.map(&String.to_integer/1)
+
+    {id, left..(left + width - 1), top..(top + height - 1)}
+    #    |> IO.inspect()
+  end
+
   def overlapping_inches(input) do
     input
-    |> trim_map
+    |> trim_map()
+    |> Enum.map(&parse_rect/1)
+    |> Enum.reduce(%{}, fn {id, x_range, y_range}, acc ->
+      Enum.reduce(y_range, acc, fn y, acc ->
+        Enum.reduce(x_range, acc, fn x, acc ->
+          Map.update(acc, {x, y}, [id], fn p -> [id | p] end)
+        end)
+      end)
+    end)
+    #     |> IO.inspect()
+    |> Enum.count(fn
+      {_, list} when length(list) > 1 -> true
+      _ -> false
+    end)
   end
 
   def non_overlapping_id(_input) do
@@ -50,12 +74,12 @@ case System.argv() do
   [input_file] ->
     input_file
     |> File.stream!([], :line)
-    |> Day3.checksum()
+    |> Day3.overlapping_inches()
     |> IO.inspect(label: "Result Part 1")
 
     input_file
     |> File.stream!([], :line)
-    |> Day3.common_letters()
+    |> Day3.non_overlapping_id()
     |> IO.inspect(label: "Result Part 2")
 
   _ ->
