@@ -29,9 +29,10 @@ defmodule Day1 do
     |> Enum.reduce_while({MapSet.new([0]), 0}, fn x, {set, current} ->
       next = current + x
 
-      case MapSet.member?(set, next) do
-        true -> {:halt, next}
-        _ -> {:cont, {MapSet.put(set, next), next}}
+      if next in set do
+        {:halt, next}
+      else
+        {:cont, {MapSet.put(set, next), next}}
       end
     end)
   end
