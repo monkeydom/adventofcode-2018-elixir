@@ -25,6 +25,31 @@ defmodule Day2 do
     |> Enum.reduce(fn {two, three}, {zwei, drei} -> {two + zwei, three + drei} end)
     |> (fn {two, three} -> two * three end).()
   end
+
+  def common_letters(input) do
+    [first | tail] =
+      input
+      |> Stream.map(fn string -> string |> String.trim() end)
+      |> Enum.sort()
+
+    #    |> IO.inspect(label: "sorted")
+
+    Enum.reduce_while(tail, first, fn x, acc ->
+      case distance(x, acc) do
+        {1, common} -> {:halt, common}
+        _ -> {:cont, x}
+      end
+    end)
+  end
+
+  defp distance(a, b) do
+    Enum.zip(String.to_charlist(a), String.to_charlist(b))
+    #    |> IO.inspect(label: "zipped")
+    |> Enum.reduce({0, ""}, fn
+      {c, c}, {n, common} -> {n, common <> <<c::utf8>>}
+      _, {n, common} -> {n + 1, common}
+    end)
+  end
 end
 
 case System.argv() do
@@ -49,6 +74,20 @@ case System.argv() do
                  """)
                ) == 4 * 3
       end
+
+      test "common_letters" do
+        assert common_letters(
+                 Day2.string_to_stream("""
+                 abcde
+                 fghij
+                 klmno
+                 pqrst
+                 fguij
+                 axcye
+                 wvxyz      
+                 """)
+               ) == "fgij"
+      end
     end
 
   [input_file] ->
@@ -56,6 +95,11 @@ case System.argv() do
     |> File.stream!([], :line)
     |> Day2.checksum()
     |> IO.inspect(label: "Result Part 1")
+
+    input_file
+    |> File.stream!([], :line)
+    |> Day2.common_letters()
+    |> IO.inspect(label: "Result Part 2")
 
   _ ->
     IO.puts(:stderr, "Usage: #{Path.basename(__ENV__.file)} [--test | filename]")
