@@ -77,4 +77,22 @@ defmodule Day8 do
     acc = fun.(node, acc)
     Enum.reduce(children, acc, fn child, acc -> tree_reduce(child, acc, fun) end)
   end
+
+  @doc ~S"""
+      iex> Day8.node_value(Day8.tree_from_string("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2"))
+      66
+  """
+
+  def node_value({[], metadata}) do
+    Enum.sum(metadata)
+  end
+
+  def node_value({children, metadata}) do
+    metadata
+    |> Enum.reduce(0, fn index, acc ->
+      node_value(Enum.at(children, index - 1)) + acc
+    end)
+  end
+
+  def node_value(nil), do: 0
 end
