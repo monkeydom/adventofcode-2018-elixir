@@ -27,9 +27,11 @@ defmodule Day8 do
 
   def tree_from_string(s) do
     s
+    |> String.trim()
     |> String.split(" ")
     |> Enum.map(&String.to_integer/1)
     |> parse_tree()
+    |> IO.inspect()
   end
 
   defp parse(tail, 0), do: {[], tail}
@@ -56,5 +58,23 @@ defmodule Day8 do
       |> parse_node()
 
     root
+  end
+
+  @doc ~S"""
+
+        iex> Day8.sum_metadata("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
+        138
+
+  """
+
+  def sum_metadata(s) do
+    s
+    |> tree_from_string()
+    |> tree_reduce(0, fn {_children, metadata}, acc -> acc + Enum.sum(metadata) end)
+  end
+
+  def tree_reduce({children, _metadata} = node, acc, fun) do
+    acc = fun.(node, acc)
+    Enum.reduce(children, acc, fn child, acc -> tree_reduce(child, acc, fun) end)
   end
 end
