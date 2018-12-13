@@ -4,8 +4,39 @@ defmodule Day6 do
   """
 
   @doc """
-  Hello world.
+      iex> Day6.area_with_max_total_distance("1, 1
+      ...>1, 6
+      ...>8, 3
+      ...>3, 4
+      ...>5, 5
+      ...>8, 9
+      ...>", 32)
+      16
+  """
 
+  def area_with_max_total_distance(s, max_total_distance) do
+    coordinates =
+      s
+      |> String.split("\n", trim: true)
+      |> Enum.map(&parse_coordinate/1)
+
+    {x_range, y_range} = bounding_box(coordinates)
+
+    grid =
+      for x <- x_range, y <- y_range, into: %{} do
+        position = {x, y}
+
+        {position,
+         coordinates
+         |> Enum.map(fn coord -> manhattan_distance(position, coord) end)
+         |> Enum.sum()}
+      end
+
+    grid
+    |> Enum.count(fn {_, d} -> d < max_total_distance end)
+  end
+
+  @doc """
   ## Examples
 
       iex> Day6.largest_area("1, 1
@@ -62,15 +93,17 @@ defmodule Day6 do
     |> elem(1)
   end
 
-  def distance_value({px, py}, coordinates) do
+  def distance_value(position, coordinates) do
     coordinates
-    |> Enum.map(fn {x, y} = coord -> {abs(px - x) + abs(py - y), coord} end)
+    |> Enum.map(fn coord -> {manhattan_distance(position, coord), coord} end)
     |> Enum.sort()
     |> case do
       [{a, _}, {a, _} | _] -> :equal
       [{d, coord} | _] -> {coord, d}
     end
   end
+
+  def manhattan_distance({ax, ay}, {bx, by}), do: abs(ax - bx) + abs(ay - by)
 
   def parse_coordinate(s) do
     s
