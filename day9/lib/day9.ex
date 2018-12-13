@@ -36,6 +36,8 @@ defmodule Day9 do
         iex> Day9.marble_game(30,5807)
         37305
 
+        iex> Day9.marble_game(465,71498)
+        383475
   """
   def marble_game(player_count, last_marble) do
     initial = new(player_count)
