@@ -1,3 +1,116 @@
+defmodule CircleList do
+  require Record
+  Record.defrecord(:circlelist, behind: [], ahead: [], length: 0)
+
+  @type circlelist :: record(:circlelist, behind: list, ahead: list, length: non_neg_integer)
+
+  @doc """
+      iex> CircleList.new([9])
+      {:circlelist, [], [9], 1}
+
+  """
+  def new(list) when is_list(list) do
+    circlelist(ahead: list, length: length(list))
+  end
+
+  @doc """
+      iex> cl = CircleList.new([9,2])
+      iex> CircleList.count(cl)
+      2
+  """
+
+  def count(circlelist(length: l)) do
+    l
+  end
+
+  def current(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
+
+  def current(circlelist(behind: b, ahead: _a) = cl) do
+    case b do
+      [n | _] -> {cl, n}
+      [] -> current(p_rotate_back(cl))
+    end
+  end
+
+  @doc """
+      iex> cl = CircleList.new([4,2])
+      iex> {cl, 4} = CircleList.next(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+      iex> {cl, 4} = CircleList.current(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+      iex> {cl, 2} = CircleList.next(cl)
+      {{:circlelist, [2, 4], [], 2}, 2}
+      iex> {cl, 2} = CircleList.current(cl)
+      {{:circlelist, [2, 4], [], 2}, 2}
+      iex> {cl, 4} = CircleList.next(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+      iex> {cl, 4} = CircleList.current(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+
+  """
+  def next(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
+  def next(circlelist(behind: _, ahead: []) = cl), do: next(p_rotate(cl))
+
+  def next(circlelist(behind: b, ahead: [e | t], length: l)) do
+    current(circlelist(behind: [e | b], ahead: t, length: l))
+  end
+
+  @doc """
+
+      iex> {cl, 4} = CircleList.prev(CircleList.new([4,2]))
+      {{:circlelist, [4], [2], 2}, 4}
+      iex> {cl, 4} = CircleList.current(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+  """
+
+  def prev(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
+  def prev(circlelist(behind: [], ahead: _) = cl), do: prev(p_rotate_back(cl))
+
+  def prev(circlelist(behind: [e | t], ahead: a, length: l)) do
+    current(circlelist(behind: t, ahead: [e | a], length: l))
+  end
+
+  defp p_rotate(circlelist(behind: b, ahead: [], length: l)) do
+    circlelist(behind: [], ahead: Enum.reverse(b), length: l)
+  end
+
+  defp p_rotate_back(circlelist(behind: [], ahead: a, length: l)) do
+    circlelist(behind: Enum.reverse(a), ahead: [], length: l)
+  end
+
+  @doc """
+      iex> cl = CircleList.new([4,2])
+      iex> {cl, 4} = CircleList.next(cl)
+      iex> cl = CircleList.push(cl, 1)
+      iex> {cl, 1} = CircleList.current(cl)
+      {{:circlelist, [1, 4], [2], 3}, 1}
+  """
+  def push(circlelist(behind: b, ahead: a, length: l), el) do
+    circlelist(behind: [el | b], ahead: a, length: l + 1)
+  end
+
+  @doc """
+      iex> cl = CircleList.new([4,2])
+      iex> {cl, 4} = CircleList.next(cl)
+      {{:circlelist, [4], [2], 2}, 4}
+      iex> {cl, 4} = CircleList.pop(cl)
+      {{:circlelist, [], [2], 1}, 4}
+      iex> {cl, 2} = CircleList.pop(cl)
+      {{:circlelist, [], [], 0}, 2}
+      iex> {cl, nil} = CircleList.pop(cl)
+      {{:circlelist, [], [], 0}, nil}
+  """
+
+  def pop(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
+
+  def pop(cl) when Record.is_record(cl, :circlelist) do
+    {circlelist(behind: [el | b], ahead: a, length: l), el} = current(cl)
+    {circlelist(behind: b, ahead: a, length: l - 1), el}
+  end
+
+  def to_list(circlelist(behind: b, ahead: a)), do: a ++ Enum.reverse(b)
+end
+
 defmodule EList do
   defstruct list: [],
             length: 0
@@ -47,7 +160,7 @@ defmodule EList do
     {
       entry,
       %EList{
-        list: { Enum.reverse(new_elists) },
+        list: {Enum.reverse(new_elists)},
         length: elist.length - 1
       }
     }
@@ -79,19 +192,19 @@ defmodule EList do
 
   def insert_at(%EList{list: {elists}} = elist, location, value) do
     new_elists =
-        elists
-        |> Enum.reduce({[], location}, fn
-          el, {acc, loc} ->
-            if loc <= el.length do
-              [EList.insert_at(el, loc, value) | acc]
-            else
-              {[el | acc], loc - el.length}
-            end
+      elists
+      |> Enum.reduce({[], location}, fn
+        el, {acc, loc} ->
+          if loc <= el.length do
+            [EList.insert_at(el, loc, value) | acc]
+          else
+            {[el | acc], loc - el.length}
+          end
 
-          el, acc when is_list(acc) ->
-            [el | acc]
-        end)
-        |> Enum.reverse()
+        el, acc when is_list(acc) ->
+          [el | acc]
+      end)
+      |> Enum.reverse()
 
     %EList{
       list: {new_elists},
@@ -102,8 +215,7 @@ end
 
 defmodule Day9 do
   defstruct scores: %{},
-            current: 0,
-            marbles: EList.new([0]),
+            marbles: CircleList.new([0]),
             player_count: 0,
             last_played_marble: 0
 
@@ -172,37 +284,39 @@ defmodule Day9 do
     case rem(marble, 23) do
       0 ->
         player = rem(marble - 1, state.player_count)
-        current = rem(state.current + state.marbles.length - 7, state.marbles.length)
-        {taken, marbles} = EList.pop_at(state.marbles, current)
+
+        {marbles, taken} =
+          Enum.reduce(1..7, state.marbles, fn _, m -> elem(CircleList.prev(m), 0) end)
+          |> CircleList.pop()
+
+        #          |> IO.inspect 
 
         %Day9{
           state
           | scores:
               Map.update(state.scores, player, taken + marble, fn o -> o + taken + marble end),
-            current: current,
-            marbles: marbles
+            marbles: elem(CircleList.next(marbles), 0)
         }
 
       _ ->
-        current = rem(state.current + 1, state.marbles.length) + 1
+        {marbles, _} = CircleList.next(state.marbles)
+        marbles = CircleList.push(marbles, marble)
 
         %Day9{
           state
-          | current: current,
-            marbles: EList.insert_at(state.marbles, current, marble)
+          | marbles: marbles
         }
     end
 
-    #    |> (fn state -> IO.puts("#{state}")
-    #      state
-    #    end).()
+    #        |> (fn state -> IO.puts("#{state}")
+    #          state
+    #        end).()
   end
 end
 
 defimpl String.Chars, for: Day9 do
   def to_string(state) do
     marble = state.last_played_marble
-    current = state.current
 
     display_player = rem(marble - 1, state.player_count)
 
@@ -214,14 +328,9 @@ defimpl String.Chars, for: Day9 do
           "-"
         end
       }] ",
-      state.marbles
+      CircleList.to_list(state.marbles)
       |> Enum.map(fn marble ->
-        String.pad_leading(Integer.to_string(marble), 2, " ")
-      end)
-      |> Enum.with_index()
-      |> Enum.map(fn
-        {m, ^current} -> ["(", m, ")"]
-        {m, _} -> [" ", m, " "]
+        String.pad_leading(Integer.to_string(marble), 3, "  ")
       end)
     ])
   end
