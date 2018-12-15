@@ -1,107 +1,155 @@
-defmodule CircleList do
-  require Record
-  Record.defrecord(:circlelist, behind: [], ahead: [])
+defmodule EList do
+  defstruct list: [],
+            length: 0
 
-  @type circlelist :: record(:circlelist, behind: list, ahead: list)
+  def new(list, length) do
+    %EList{
+      list: list,
+      length: length
+    }
+  end
 
-  @doc """
-      iex> CircleList.new([9])
-      {:circlelist, [], [9]}
+  def new(list) do
+    %EList{
+      list: list,
+      length: length(list)
+    }
+  end
 
-  """
-  def new(list) when is_list(list) do
-    circlelist(ahead: list)
+  def pop_at(%EList{list: list} = elist, location) when is_list(list) do
+    {entry, list} = List.pop_at(elist.list, location)
+
+    {
+      entry,
+      %EList{
+        list: list,
+        length: elist.length - 1
+      }
+    }
+  end
+
+  def pop_at(%EList{list: {elists}} = elist, location) do
+    {new_elists, {entry}} =
+      elists
+      |> Enum.reduce({[], location}, fn
+        el, {acc, {entry}} ->
+          {[el | acc], {entry}}
+
+        el, {acc, loc} ->
+          if loc < el.length do
+            {entry, new_el} = EList.pop_at(el, loc)
+            {[new_el | acc], {entry}}
+          else
+            {[el | acc], loc - el.length}
+          end
+      end)
+
+    {
+      entry,
+      %EList{
+        list: {Enum.reverse(new_elists)},
+        length: elist.length - 1
+      }
+    }
   end
 
   @doc """
-      iex> cl = CircleList.new([9,2])
-      iex> CircleList.count(cl)
-      2
+    
+    iex> l250 = 0..249 |> Enum.to_list() |> EList.new() 
+    iex> l250 |> EList.at(2)
+    2
+    iex> l250 |> EList.at(200)
+    200
+    
+    iex> l250 = 0..249 |> Enum.reduce(EList.new([]), fn el, acc -> EList.insert_at(acc, el, acc.length) end)  
+    iex> l250 |> EList.at(2)
+    2
+    iex> l250 |> EList.at(200)
+    200
+
   """
 
-  def count(circlelist(behind: b, ahead: a)) do
-    length(b) + length(a)
-  end
+  def at(%EList{list: list} = elist, location) when is_list(list),
+    do: Enum.at(list, location)
 
-  def current(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
+  def at(%EList{list: {elists}} = elist, location) do
+    elists
+    |> Enum.reduce({nil, location}, fn
+      el, {entry, nil} ->
+        {entry, nil}
 
-  def current(circlelist(behind: b, ahead: _a) = cl) do
-    case b do
-      [n | _] -> {cl, n}
-      [] -> current(p_rotate_back(cl))
+      el, {nil, loc} ->
+        if loc < el.length do
+          {EList.at(el, loc), nil}
+        else
+          {nil, loc - el.length}
+        end
+    end)
+    |> case do
+      {entry, loc} -> entry
     end
   end
 
-  @doc """
-      iex> cl = CircleList.new([4,2])
-      iex> {cl, 4} = CircleList.next(cl)
-      {{:circlelist, [4], [2]}, 4}
-      iex> {cl, 4} = CircleList.current(cl)
-      {{:circlelist, [4], [2]}, 4}
-      iex> {cl, 2} = CircleList.next(cl)
-      {{:circlelist, [2, 4], []}, 2}
-      iex> {cl, 2} = CircleList.current(cl)
-      {{:circlelist, [2, 4], []}, 2}
-      iex> {cl, 4} = CircleList.next(cl)
-      {{:circlelist, [4], [2]}, 4}
-      iex> {cl, 4} = CircleList.current(cl)
-      {{:circlelist, [4], [2]}, 4}
+  def insert_at(%EList{list: list} = elist, location, value) when is_list(list) do
+    if elist.length == 100 do
+      {l1, l2} = Enum.split(list, 50)
 
-  """
-  def next(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
-  def next(circlelist(behind: _, ahead: []) = cl), do: next(p_rotate(cl))
-
-  def next(circlelist(behind: b, ahead: [e | t])) do
-    current(circlelist(behind: [e | b], ahead: t))
+      EList.insert_at(
+        %EList{
+          list:
+            {[
+               new(l1, 50),
+               new(l2, 50)
+             ]},
+          length: elist.length
+        },
+        location,
+        value
+      )
+    else
+      %EList{
+        list: List.insert_at(elist.list, location, value),
+        length: elist.length + 1
+      }
+    end
   end
 
-  def prev(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
-  def prev(circlelist(behind: [], ahead: _) = cl), do: prev(p_rotate_back(cl))
+  def insert_at(%EList{list: {elists}} = elist, location, value) do
+    new_elists =
+      elists
+      |> Enum.reduce({[], location}, fn
+        el, {acc, loc} ->
+          if loc <= el.length do
+            [EList.insert_at(el, loc, value) | acc]
+          else
+            {[el | acc], loc - el.length}
+          end
 
-  def prev(circlelist(behind: [e | t], ahead: a)) do
-    current(circlelist(behind: [t], ahead: [e | a]))
+        el, acc when is_list(acc) ->
+          [el | acc]
+      end)
+      |> Enum.reverse()
+
+    %EList{
+      list: {new_elists},
+      length: elist.length + 1
+    }
   end
 
-  defp p_rotate(circlelist(behind: b, ahead: [])) do
-    circlelist(behind: [], ahead: Enum.reverse(b))
-  end
+  def to_list(%EList{list: list} = elist) when is_list(list),
+    do: list
 
-  defp p_rotate_back(circlelist(behind: [], ahead: a)) do
-    circlelist(behind: Enum.reverse(a), ahead: [])
-  end
-
-  @doc """
-      iex> cl = CircleList.new([4,2])
-      iex> {cl, 4} = CircleList.next(cl)
-      iex> cl = CircleList.push(cl, 1)
-      iex> {cl, 1} = CircleList.current(cl)
-      {{:circlelist, [1, 4], [2]}, 1}
-  """
-  def push(circlelist(behind: b, ahead: a), el) do
-    circlelist(behind: [el | b], ahead: a)
-  end
-
-  @doc """
-      iex> cl = CircleList.new([4,2])
-      iex> {cl, 4} = CircleList.next(cl)
-      {{:circlelist, [4], [2]}, 4}
-      iex> {cl, 4} = CircleList.pop(cl)
-      {{:circlelist, [], [2]}, 4}
-      iex> {cl, 2} = CircleList.pop(cl)
-      {{:circlelist, [], []}, 2}
-      iex> {cl, nil} = CircleList.pop(cl)
-      {{:circlelist, [], []}, nil}
-  """
-
-  def pop(circlelist(behind: [], ahead: []) = cl), do: {cl, nil}
-
-  def pop(cl) when Record.is_record(cl, :circlelist) do
-    {circlelist(behind: [el | b], ahead: a), el} = current(cl)
-    {circlelist(behind: b, ahead: a), el}
+  def to_list(%EList{list: {elists}} = elist) do
+    elists
+    |> Enum.map(fn el -> to_list(el) end)
+    |> Enum.concat()
   end
 end
 
 defmodule Day14 do
+  defstruct recipies: EList.new([3, 7]),
+            positions: [{0, 3}, {1, 7}]
+
   @moduledoc """
   Documentation for Day14.
   """
@@ -112,10 +160,52 @@ defmodule Day14 do
   ## Examples
 
       iex> Day14.generate_sequence(9 + 10)
-      19
+      [3, 7, 1, 0, 1, 0, 1, 2, 4, 5, 1, 5, 8, 9, 1, 6, 7, 7, 9]
+
+      iex> Day14.solution(9)
+      "5158916779"
 
   """
   def generate_sequence(length) do
-    length
+    sequence_step(%__MODULE__{}, length - 2)
+  end
+
+  def sequence_step(%__MODULE__{recipies: recipies}, additional_length)
+      when additional_length <= 0,
+      do: EList.to_list(recipies)
+
+  def sequence_step(%__MODULE__{recipies: recipies, positions: positions}, additional_length) do
+    IO.inspect({positions, recipies})
+
+    next =
+      positions
+      |> Enum.map(&elem(&1, 1))
+      |> Enum.sum()
+
+    {recipies, additional_length} =
+      if next >= 10 do
+        [div(next, 10), rem(next, 10)]
+      else
+        [rem(next, 10)]
+      end
+      |> Enum.reduce({recipies, additional_length}, fn el, {recipies, add_length} ->
+        {EList.insert_at(recipies, recipies.length, el), add_length - 1}
+      end)
+
+    positions =
+      positions
+      |> Enum.map(fn {pos, value} ->
+        pos = rem(pos + value + 1, recipies.length)
+        {pos, EList.at(recipies, pos)}
+      end)
+
+    sequence_step(%__MODULE__{recipies: recipies, positions: positions}, additional_length)
+  end
+
+  def solution(length) do
+    generate_sequence(length + 10)
+    |> Enum.slice(length, 10)
+    |> Enum.map(fn el -> el + ?0 end)
+    |> List.to_string()
   end
 end
