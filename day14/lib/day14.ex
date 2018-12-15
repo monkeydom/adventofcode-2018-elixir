@@ -69,13 +69,13 @@ defmodule EList do
 
   """
 
-  def at(%EList{list: list} = elist, location) when is_list(list),
+  def at(%EList{list: list}, location) when is_list(list),
     do: Enum.at(list, location)
 
-  def at(%EList{list: {elists}} = elist, location) do
+  def at(%EList{list: {elists}}, location) do
     elists
     |> Enum.reduce({nil, location}, fn
-      el, {entry, nil} ->
+      _el, {entry, nil} ->
         {entry, nil}
 
       el, {nil, loc} ->
@@ -86,7 +86,7 @@ defmodule EList do
         end
     end)
     |> case do
-      {entry, loc} -> entry
+      {entry, _loc} -> entry
     end
   end
 
@@ -136,10 +136,10 @@ defmodule EList do
     }
   end
 
-  def to_list(%EList{list: list} = elist) when is_list(list),
+  def to_list(%EList{list: list}) when is_list(list),
     do: list
 
-  def to_list(%EList{list: {elists}} = elist) do
+  def to_list(%EList{list: {elists}}) do
     elists
     |> Enum.map(fn el -> to_list(el) end)
     |> Enum.concat()
@@ -148,16 +148,14 @@ end
 
 defmodule Day14 do
   defstruct recipies: EList.new([3, 7]),
-            positions: [{0, 3}, {1, 7}]
+            positions: [{0, 3}, {1, 7}],
+            insert_buffer: [0, 0, 0, 0, 0]
 
   @moduledoc """
   Documentation for Day14.
   """
 
   @doc """
-  Hello world.
-
-  ## Examples
 
       iex> Day14.generate_sequence(9 + 10)
       [3, 7, 1, 0, 1, 0, 1, 2, 4, 5, 1, 5, 8, 9, 1, 6, 7, 7, 9]
@@ -175,7 +173,7 @@ defmodule Day14 do
       do: EList.to_list(recipies)
 
   def sequence_step(%__MODULE__{recipies: recipies, positions: positions}, additional_length) do
-    IO.inspect({positions, recipies})
+    # IO.inspect({positions, recipies})
 
     next =
       positions
@@ -207,5 +205,64 @@ defmodule Day14 do
     |> Enum.slice(length, 10)
     |> Enum.map(fn el -> el + ?0 end)
     |> List.to_string()
+  end
+
+  @doc """
+
+      iex> Day14.solution2([5,1,5,8,9])
+      9
+
+      iex> Day14.solution2([0,1,2,4,5])
+      5
+
+      iex> Day14.solution2([9,2,5,1,0])
+      18
+
+      iex> Day14.solution2([5,9,4,1,4])
+      2018
+
+  """
+
+  def solution2(match_list) do
+    sequence_test(%__MODULE__{}, match_list)
+  end
+
+  def sequence_test(
+        %__MODULE__{recipies: recipies, positions: positions, insert_buffer: match_list},
+        match_list
+      ),
+      do: recipies.length - length(match_list)
+
+  def sequence_test(
+        %__MODULE__{recipies: recipies, positions: positions, insert_buffer: buffer},
+        match_list
+      ) do
+    next =
+      positions
+      |> Enum.map(&elem(&1, 1))
+      |> Enum.sum()
+
+    {recipies, buffer} =
+      if next >= 10 do
+        [div(next, 10), rem(next, 10)]
+      else
+        [rem(next, 10)]
+      end
+      |> Enum.reduce({recipies, buffer}, fn el, {recipies, [_ | buffer]} ->
+        {EList.insert_at(recipies, recipies.length, el),
+         Enum.reverse([el | Enum.reverse(buffer)])}
+      end)
+
+    positions =
+      positions
+      |> Enum.map(fn {pos, value} ->
+        pos = rem(pos + value + 1, recipies.length)
+        {pos, EList.at(recipies, pos)}
+      end)
+
+    sequence_test(
+      %__MODULE__{recipies: recipies, positions: positions, insert_buffer: buffer},
+      match_list
+    )
   end
 end
