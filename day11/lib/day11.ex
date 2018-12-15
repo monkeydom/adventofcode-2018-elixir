@@ -23,6 +23,10 @@ defmodule Day11 do
 
       iex> Day11.largest_power_for_serial(18)
       {{33, 45}, 29}
+      
+      iex> Day11.largest_power_for_serial(5153)
+      {{235, 18}, 31}
+      
 
   """
 
@@ -46,6 +50,49 @@ defmodule Day11 do
       end)
     end)
   end
+
+  @doc """
+
+      iex> Day11.largest_power_triple(18)
+      {{90,269,16}, 113}
+      
+      iex> Day11.largest_power_triple(42)
+      {{232,251,12}, 119}
+      
+
+  """
+
+  def largest_power_triple(serial, size \\ 300) do
+    grid = grid_for_serial(serial, size)
+
+    1..size
+    |> Enum.reduce({nil, 0}, fn y, acc ->
+      1..size
+      |> Enum.reduce(acc, fn x, acc ->
+        dimension = min(size - x, size - y)
+        
+        0..dimension
+        |> Enum.reduce({acc, 0}, fn d, {{_coord, maxpower} = prev, power} -> 
+            power = 
+            case d do
+              0 -> grid[{x,y}]
+              d -> power + grid[{x+d, y+d}] +
+                  (for c <- 0..(d-1) do grid[{x+d, y+c}] + grid[{x+c, y+d}] end |> Enum.sum())
+            end
+            if power > maxpower do
+              {{{x,y,d+1}, power}, power}  
+            else
+              {prev, power}
+            end
+          end)
+        |> case do
+            {acc, _} -> acc
+          end
+        
+      end)
+    end)
+  end
+
 
   @doc """
 
