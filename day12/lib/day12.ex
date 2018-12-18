@@ -29,9 +29,7 @@ defmodule Plant do
               left_index: 0,
               state: "#..#.#..##......###...###"
             }
-  """
 
-  @doc """
       iex> p = Plant.new("#..#.#..##......###...###")
       iex> Plant.seed_state_at(p, 1)
       ".#..#"
@@ -65,7 +63,7 @@ defmodule Plant do
     Enum.join(
       [
         "  ",
-        -1..left_index |> Enum.map(fn f -> "-" end) |> Enum.join(""),
+        -1..left_index |> Enum.map(fn _ -> "-" end) |> Enum.join(""),
         "0 - g: #{generation}",
         "\n",
         "  ",
