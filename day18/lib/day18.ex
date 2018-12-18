@@ -42,7 +42,23 @@ defmodule Lumber do
     ]
   end
 
-  def step(%__MODULE__{field: field, generation: generation, dimension: dimension}) do
+  def to_string(%__MODULE__{} = lumber) do
+    <<"After #{lumber.generation} minutes:\n"::binary,
+      Enum.join(Enum.map(lumber.field, &List.to_string/1), "\n")::binary>>
+  end
+
+  def step(lumber, 0) do
+    #    IO.puts(Lumber.to_string(lumber))
+    lumber
+  end
+
+  def step(lumber, n) do
+    #    IO.puts(Lumber.to_string(lumber))
+    lumber = step(lumber)
+    step(lumber, n - 1)
+  end
+
+  def step(%__MODULE__{field: field, generation: generation, dimension: dimension} = _lumber) do
     field = step(field)
 
     %__MODULE__{
@@ -65,7 +81,11 @@ defmodule Lumber do
     step(field, ad, [])
   end
 
-  defp step([_, _], [_, _], acc), do: Enum.reverse(acc)
+  defp step([_, _], [_, _], acc) do
+    acc
+    |> Enum.reduce([], fn line, acc -> [pad_list(line, ?.) | acc] end)
+    |> pad_field()
+  end
 
   defp step(
          [_ | [field_line | _] = field_tail],
@@ -87,27 +107,22 @@ defmodule Lumber do
          [_ | [ad3 | _] = ad3_tail],
          acc
        ) do
+    counts =
+      [
+        [left, right]
+        |> Enum.reduce(value_base(), &value_counter/2),
+        ad1,
+        ad3
+      ]
+      |> Enum.reduce(fn %{tree: t, yard: y}, %{tree: ta, yard: ya} ->
+        %{tree: t + ta, yard: y + ya}
+      end)
+
     next_value =
       case value do
-        ?. ->
-          ?.
-
-        value ->
-          counts =
-            [
-              [left, right]
-              |> Enum.reduce(value_base(), &value_counter/2),
-              ad1,
-              ad3
-            ]
-            |> Enum.reduce(fn %{tree: t, yard: y}, %{tree: ta, yard: ya} ->
-              %{tree: t + ta, yard: y + ya}
-            end)
-
-          case value do
-            ?| -> if counts[:yard] >= 3, do: ?#, else: ?|
-            ?# -> if counts[:yard] >= 1 and counts[:tree] >= 1, do: ?#, else: ?.
-          end
+        ?. -> if counts[:tree] >= 3, do: ?|, else: ?.
+        ?| -> if counts[:yard] >= 3, do: ?#, else: ?|
+        ?# -> if counts[:yard] >= 1 and counts[:tree] >= 1, do: ?#, else: ?.
       end
 
     next_field_line(ad1_tail, field_line_tail, ad3_tail, [next_value | acc])
@@ -155,6 +170,20 @@ defmodule Lumber do
   defp value_counter(?#, acc), do: %{acc | yard: acc[:yard] + 1}
   defp value_counter(?|, acc), do: %{acc | tree: acc[:tree] + 1}
   defp value_counter(_, acc), do: acc
+
+  def solution_value(%__MODULE__{field: field}) do
+    field
+    |> Enum.reduce({0, 0}, fn line, acc ->
+      Enum.reduce(line, acc, fn
+        ?#, {t, y} -> {t, y + 1}
+        ?|, {t, y} -> {t + 1, y}
+        _, acc -> acc
+      end)
+    end)
+    |> case do
+      {t, y} -> t * y
+    end
+  end
 end
 
 defmodule Day18 do
@@ -174,19 +203,42 @@ defmodule Day18 do
         ...>|.||||..|.
         ...>...#.|..|.")
         iex> Lumber.step(l).field
-        ['.......##.',
-         '......|###',
-         '.|..|...#.',
-         '..|#.....#',
-         '..##||.|#|',
-         '...#.||...',
-         '.|....|...',
-         '||....|..|',
-         '|.||||..|.',
-         '.....|..|.']
+        ['............',
+        '........##..',
+        '.......|###.',
+        '..|..|...#..',
+        '...|#||...#.',
+        '...##||.|#|.',
+        '....#||||...',
+        '.||...|||...',
+        '.|||||.||.|.',
+        '.||||||||||.',
+        '.....||..|..',
+        '............']
         
   """
   def lumber(input) do
     Lumber.new(input)
+  end
+
+  @doc """
+
+        iex> Day18.part1(".#.#...|#.
+        ...>.....#|##|
+        ...>.|..|...#.
+        ...>..|#.....#
+        ...>#.#|||#|#|
+        ...>...#.||...
+        ...>.|....|...
+        ...>||...#|.#|
+        ...>|.||||..|.
+        ...>...#.|..|.")
+        1147
+        
+  """
+  def part1(input, duration \\ 10) do
+    Lumber.new(input)
+    |> Lumber.step(duration)
+    |> Lumber.solution_value()
   end
 end
