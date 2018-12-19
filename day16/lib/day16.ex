@@ -277,4 +277,31 @@ defmodule Day16 do
   end
 
   defp parse_triples(_, acc), do: Enum.reverse(acc)
+
+  def deduce_opcodes(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> parse_triples()
+    |> Enum.map(fn tr -> {matching_opcodes(tr), tr} end)
+    |> Enum.sort_by(fn {l, _} -> length(l) end)
+    |> deduce_opcodes(%{})
+  end
+
+  defp deduce_opcodes([], acc), do: acc
+
+  defp deduce_opcodes([{[opcode], {{opnr, _, _, _}, _, _}} | tail], acc) do
+    new_acc = Map.put_new(acc, opnr, opcode)
+
+    tail =
+      Enum.reduce(tail, [], fn
+        {opcode_list, {{_opnr, _, _, _}, _, _} = operation}, acc ->
+          case Enum.reject(opcode_list, &(&1 == opcode)) do
+            [] -> acc
+            new_ol -> [{new_ol, operation} | acc]
+          end
+      end)
+      |> Enum.sort_by(fn {l, _} -> length(l) end)
+
+    deduce_opcodes(tail, new_acc)
+  end
 end
