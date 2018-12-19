@@ -304,4 +304,13 @@ defmodule Day16 do
 
     deduce_opcodes(tail, new_acc)
   end
+  
+  
+  def run_program(input, decoder_map) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.map(&parse_instruction/1)
+    |> Enum.map(fn ins -> put_elem(ins, 0, decoder_map[elem(ins, 0)]) end)
+    |> Enum.reduce([0,0,0,0], fn ins, regs -> Device.step(regs, ins) end)
+  end
 end
