@@ -152,7 +152,7 @@ defmodule Day19 do
       ...>seti 0 4 0
       ...>seti 0 0 3
       ...>")
-      :world
+      1968
 
       iex> Day19.part1("#ip 0
       ...>seti 5 0 1
@@ -170,39 +170,47 @@ defmodule Day19 do
     |> Enum.map(&parse_instruction/1)
     |> execute()
     |> case do
-        {_ip, regs, _ipr} -> hd(regs)
+      {_ip, regs, _ipr} -> hd(regs)
     end
   end
-  
-  def execute([{:ip, ipr} | instructions]) do 
-    execute(to_indexed_map(instructions), {0, [0,0,0,0,0,0], ipr})
+
+  def execute([{:ip, ipr} | instructions]) do
+    execute(to_indexed_map(instructions), {0, [0, 0, 0, 0, 0, 0], ipr})
   end
-  
+
   def execute(instruction_map, {ip, regs, ipr}) do
     case instruction_map[ip] do
-     nil -> IO.inspect({ip, regs, ipr}, label: "halted")
-     next_instruction ->
+      nil ->
+        IO.inspect({ip, regs, ipr}, label: "halted")
+
+      next_instruction ->
         regs = Device.store(regs, ipr, ip)
         new_regs = Device.step(regs, next_instruction)
+
         if hd(regs) != hd(new_regs) do
-        IO.puts("ip(#{ipr})=#{ip} #{inspect(regs)} #{inspect(next_instruction)} #{inspect(new_regs)}")
+          IO.puts(
+            "ip(#{ipr})=#{ip} #{inspect(regs)} #{inspect(next_instruction)} #{inspect(new_regs)}"
+          )
         end
+
         ip = Device.read(new_regs, ipr) + 1
         execute(instruction_map, {ip, new_regs, ipr})
     end
   end
-  
+
   defp parse_instruction(s) do
     case String.split(s, " ") do
-      ["#ip", num] -> {:ip, String.to_integer(num)}
-      [opcode | tail] -> List.to_tuple([String.to_existing_atom(opcode) | Enum.map(tail, &String.to_integer/1)])  
+      ["#ip", num] ->
+        {:ip, String.to_integer(num)}
+
+      [opcode | tail] ->
+        List.to_tuple([String.to_existing_atom(opcode) | Enum.map(tail, &String.to_integer/1)])
     end
   end
-  
-  
+
   defp to_indexed_map(list) do
-    Stream.iterate(0, &(&1+1)) 
-    |> Stream.zip(list) 
-    |> Enum.into(%{})     
+    Stream.iterate(0, &(&1 + 1))
+    |> Stream.zip(list)
+    |> Enum.into(%{})
   end
 end
