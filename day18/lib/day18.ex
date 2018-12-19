@@ -53,7 +53,7 @@ defmodule Lumber do
   end
 
   def step(lumber, n) do
-    #    IO.puts(Lumber.to_string(lumber))
+    # IO.puts(Lumber.to_string(lumber))
     lumber = step(lumber)
     step(lumber, n - 1)
   end
@@ -107,22 +107,22 @@ defmodule Lumber do
          [_ | [ad3 | _] = ad3_tail],
          acc
        ) do
-    counts =
+    {t,y} =
       [
         [left, right]
         |> Enum.reduce(value_base(), &value_counter/2),
         ad1,
         ad3
       ]
-      |> Enum.reduce(fn %{tree: t, yard: y}, %{tree: ta, yard: ya} ->
-        %{tree: t + ta, yard: y + ya}
+      |> Enum.reduce(fn {t, y}, {ta, ya} ->
+        {t + ta, y + ya}
       end)
 
     next_value =
       case value do
-        ?. -> if counts[:tree] >= 3, do: ?|, else: ?.
-        ?| -> if counts[:yard] >= 3, do: ?#, else: ?|
-        ?# -> if counts[:yard] >= 1 and counts[:tree] >= 1, do: ?#, else: ?.
+        ?. -> if t >= 3, do: ?|, else: ?.
+        ?| -> if y >= 3, do: ?#, else: ?|
+        ?# -> if y >= 1 and t >= 1, do: ?#, else: ?.
       end
 
     next_field_line(ad1_tail, field_line_tail, ad3_tail, [next_value | acc])
@@ -131,16 +131,7 @@ defmodule Lumber do
   @doc """
     
           iex> Lumber.adjacency_field([[?., ?., ?#, ?|, ?|, ?.]])
-          [
-            [
-              %{tree: 0, yard: 0},
-              %{tree: 0, yard: 1},
-              %{tree: 1, yard: 1},
-              %{tree: 2, yard: 1},
-              %{tree: 2, yard: 0},
-              %{tree: 0, yard: 0}
-            ]
-          ]
+          [[{0, 0}, {0, 1}, {1, 1}, {2, 1}, {2, 0}, {0, 0}]]
   """
 
   def adjacency_field(field) do
@@ -150,7 +141,7 @@ defmodule Lumber do
 
   def adjacency_field([_, _], acc) do
     Enum.reverse(acc)
-    |> pad_list(%{yard: 0, tree: 0})
+    |> pad_list(value_base())
   end
 
   def adjacency_field([a | [b, c | _] = tail], acc) do
@@ -164,11 +155,11 @@ defmodule Lumber do
   end
 
   defp value_base() do
-    %{yard: 0, tree: 0}
+    {0,0} # trees, yards
   end
 
-  defp value_counter(?#, acc), do: %{acc | yard: acc[:yard] + 1}
-  defp value_counter(?|, acc), do: %{acc | tree: acc[:tree] + 1}
+  defp value_counter(?#, {t,y}), do: {t,y+1}
+  defp value_counter(?|, {t,y}), do: {t+1,y}
   defp value_counter(_, acc), do: acc
 
   def solution_value(%__MODULE__{field: field}) do
@@ -292,5 +283,15 @@ defmodule Day18 do
     Lumber.new(input)
     |> Lumber.step(duration)
     |> Lumber.solution_value()
+  end
+  
+  def part2(input, duration \\ 10) do
+    lumber = Lumber.new(input)
+    
+    0..duration
+    |> Enum.reduce({[],lumber}, fn _, {acc, lumber} ->
+        next = Lumber.step(lumber)
+        {[{lumber.generation, Lumber.solution_value(lumber)} | acc], next}
+      end)
   end
 end
