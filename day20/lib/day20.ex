@@ -36,10 +36,27 @@ defmodule Day20 do
     |> elem(1)
   end
 
+  @doc """
+      
+      iex> Day20.part2("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))$")
+      0
+
+      iex> Day20.part2("^WSSEESWWWNW(S|NENNEEEENN(ESSSSW(NWSW|SSEN)|WSWWN(E|WWS(E|SS))))$", 31)
+      3
+      
+  """
+  def part2(<<"^", path::binary>>, min_distance \\ 1000) do
+    pos = {0, 0}
+    distance = 0
+
+    collect_paths(path, {pos, distance}, %{pos => distance}, [])
+    |> Enum.count(fn {_pos, distance} -> distance >= min_distance end)
+  end
+
   defp collect_paths("$", {pos, distance}, distance_map, []) do
     #    IO.write(<<"\u001b[30D">>)
     #    IO.write(String.pad_leading("#{inspect({pos, distance})} #{Enum.count(distance_map)}",30, " "))
-    #    Process.sleep(100)
+    #    Process.sleep(500)
     distance_map
   end
 
@@ -58,6 +75,8 @@ defmodule Day20 do
   defp collect_paths(<<")", tail::binary>>, current, distance_map, [
          {{_prev_pos, _prev_distance}, branches} | stacktail
        ]) do
+    # There is something wrong with my reasoning here, apparantly I don't have to collect all the paths here, but can go with just following the longest.
+
     # branch_length = length(branches)+1
     # IO.write(String.pad_leading("", branch_length, "1234567890"))
     #    [current | branches]
