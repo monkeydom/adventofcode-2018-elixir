@@ -186,7 +186,7 @@ defmodule Day19 do
       1968
   """
   
-  def part2(initial_registers \\ [0,0,0,0,0,0,0]) do
+  def part2(initial_registers \\ [0,0,0,0,0,0]) do
     elixired(List.to_tuple(initial_registers))
   end
 
@@ -374,12 +374,78 @@ defmodule Day19 do
     {r0,r1,r2,ip,r4,r5} |> elixired()
   end
 
-  defp elixired({r0,r1,r2,_ip=26,r4,r5} = _regs) do
+  defp elixired({r0,r1,r2,ip=26,r4,r5} = _regs) do
 # seti 0 0 3
     ip = r0 
     ip = ip + 1
     {r0,r1,r2,ip,r4,r5} |> elixired()
   end
+
+# only used when r0 == 1 initially
+
+  defp elixired({r0,r1,r2,ip=27,r4,r5} = _regs) do
+# setr 3 9 1
+    r1 = ip 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=28,r4,r5} = _regs) do
+# mulr 1 3 1
+    r1 = ip * r1 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=29,r4,r5} = _regs) do
+# addr 3 1 1
+    r1 = ip + r1 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=30,r4,r5} = _regs) do
+# mulr 3 1 1
+    r1 = ip * r1 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=31,r4,r5} = _regs) do
+# muli 1 14 1
+    r1 = r1 * 14 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=32,r4,r5} = _regs) do
+# mulr 1 3 1
+    r1 = ip * r1
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=33,r4,r5} = _regs) do
+# addr 4 1 4
+    r4 = r1 + r4 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=34,r4,r5} = _regs) do
+# seti 0 4 0
+    r0 = 0 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=35,r4,r5} = _regs) do
+# seti 0 0 3
+    ip = 0 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
   
   defp equal(x,x), do: 1
   defp equal(_,_), do: 0
