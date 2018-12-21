@@ -1,0 +1,53 @@
+#ip 3
+
+start:
+ 0    jump entry
+
+loop_entry:
+ 1    r5 = 1
+loop2:
+ 2    r2 = 1
+ 
+loop1:
+ 3    r1 = r5 * r2
+
+loop1_inner:
+unless (r1 == r4)
+	jump after_add_result
+
+ 7    r0 += r5 
+
+after_add_result:
+ 8    r2 += 1
+
+unless (r2 > r4)
+	jump loop1
+
+12    r5 += 1
+
+unless (r5 > r4)
+	jump loop2
+
+16    halt
+
+entry:
+17    r4 += 2
+18    r4 *= r4
+19    r4 *= 19 
+20    r4 *= 11
+21    r1 += 6
+22    r1 *= 22
+23    r1 += 10
+24    r4 += r1
+unless (r0 > 0)
+ jump loop_entry
+
+27    r1 = 27 
+28    r1 *= 28 
+29    r1 += r1
+30    r1 *= r1 
+31    r1 *= 14
+32    r1 *= 32
+33    r4 += r1
+34    r0 = 0
+35    jump loop1_inner

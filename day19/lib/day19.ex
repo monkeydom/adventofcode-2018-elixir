@@ -446,6 +446,52 @@ defmodule Day19 do
     {r0,r1,r2,ip,r4,r5} |> elixired()
   end
 
+
+  def optimized(r0 \\ 0) do
+    r4 = 2 * 2 * 19 * 11
+    r1 = 6 * 22 + 10
+    r4 = r4 + r1
+    case r0 do
+      0 ->
+        optimized_loop_entry(r1,r4,0)
+      _ ->
+        r1 = (((27 * 28) + 29) * 30)
+        r1 = r1 * 14 * 32
+        r4 = r1 + r4
+        IO.inspect({0, r1, 0, 0, r4, 0})
+        optimized_loop1_inner(r1,0,0,r4,0)
+    end
+  end
+  
+  defp optimized_loop_entry(r1, r4, r0) do
+    optimized_loop1(1,1,r4, r0)
+  end
+  
+  defp optimized_loop1(r2, r5, r4, r0) do
+    r1 = r2 * r5
+    optimized_loop1_inner(r1, r2, r5, r4, r0)
+  end
+
+  defp optimized_loop1_inner(r1, r2, r5, r4, r0) do
+    r0 = cond do
+      r4 == r1 -> 
+        IO.inspect({r0,r1,r2,:ip,r4,r5})
+        r0 + r5
+      true -> r0
+    end
+    r2 = r2 + 1
+    unless r2 > r4 do
+      optimized_loop1(r2,r5,r4,r0)
+    else
+      r5 = r5 + 1
+      unless r5 > r4 do
+        optimized_loop1(1, r5, r4, r0)
+      else 
+        { :halted, {r0, r1, r2, 257, r4, r5} }
+      end
+    end
+  end
+  
   
   defp equal(x,x), do: 1
   defp equal(_,_), do: 0
