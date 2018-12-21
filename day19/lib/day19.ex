@@ -113,7 +113,21 @@ defmodule Device do
 end
 
 defmodule Day19 do
+  
+  require Device # for the atoms
+  
   @doc """
+
+      iex> Day19.part1("#ip 0
+      ...>seti 5 0 1
+      ...>seti 6 0 2
+      ...>addi 0 1 0
+      ...>addr 1 2 3
+      ...>setr 1 0 0
+      ...>seti 8 0 4
+      ...>seti 9 0 5")
+      6
+
       iex> Day19.part1("#ip 3
       ...>addi 3 16 3
       ...>seti 1 6 5
@@ -151,31 +165,231 @@ defmodule Day19 do
       ...>addr 4 1 4
       ...>seti 0 4 0
       ...>seti 0 0 3
-      ...>")
+      ...>", [990, 1, 1, 7, 978, 978])
       1968
 
-      iex> Day19.part1("#ip 0
-      ...>seti 5 0 1
-      ...>seti 6 0 2
-      ...>addi 0 1 0
-      ...>addr 1 2 3
-      ...>setr 1 0 0
-      ...>seti 8 0 4
-      ...>seti 9 0 5")
-      6
+
   """
-  def part1(input) do
+  def part1(input, initial_registers \\ [0,0,0,0,0,0]) do
     input
     |> String.split("\n", trim: true)
     |> Enum.map(&parse_instruction/1)
-    |> execute()
+    |> execute(initial_registers)
     |> case do
       {_ip, regs, _ipr} -> hd(regs)
     end
   end
+  
+  @doc """
 
-  def execute([{:ip, ipr} | instructions]) do
-    execute(to_indexed_map(instructions), {0, [0, 0, 0, 0, 0, 0], ipr})
+      iex> Day19.part2([0,0,0,0,0,0])
+      1968
+  """
+  
+  def part2(initial_registers \\ [0,0,0,0,0,0,0]) do
+    elixired(List.to_tuple(initial_registers))
+  end
+
+  defp elixired({_,_,_,ip,_,_} = regs) when ip > 35, do: {:halted, regs}
+
+  defp elixired({r0,r1,r2,ip=0,r4,r5} = _regs) do
+# addi 3 16 3
+    ip = ip + 16
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=1,r4,r5} = _regs) do
+# seti 1 6 5
+    r5 = 1
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=2,r4,r5} = _regs) do
+# seti 1 8 2
+    r2 = 1
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=3,r4,r5} = _regs) do
+# mulr 5 2 1
+    r1 = r5 * r2
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=4,r4,r5} = _regs) do
+# eqrr 1 4 1 if r1 == r4 => r1
+    r1 = equal(r1,r4)
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=5,r4,r5} = _regs) do
+# addr 1 3 3 skip next if equal 
+    ip = r1 + ip
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=6,r4,r5} = _regs) do
+# addi 3 1 3 skip next instruction
+    ip = ip + 1
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=7,r4,r5} = _regs) do
+# addr 5 0 0 # this is the part where it increments
+    r0 = r0 + r5
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=8,r4,r5} = _regs) do
+# addi 2 1 2
+    r2 = r2 + 1
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=9,r4,r5} = _regs) do
+# gtrr 2 4 1 if r2 > r4 => r1
+    r1 = greater(r2,r4)
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=10,r4,r5} = _regs) do
+# addr 3 1 3 skip next if equal 
+    ip = r1 + ip
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,ip=11,r4,r5} = _regs) do
+# seti 2 3 3	
+    ip = 2 
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=12,r4,r5} = _regs) do
+# addi 5 1 5
+    r5 = r5 + 1
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=13,r4,r5} = _regs) do
+# gtrr 5 4 1 if r5 > r4 => r1
+    r1 = greater(r5,r4)
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=14,r4,r5} = _regs) do
+# addr 1 3 3  
+    ip = r1 + ip
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=15,r4,r5} = _regs) do
+# seti 1 8 3 jump to 2
+    ip = 1
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=16,r4,r5} = _regs) do
+# mulr 3 3 3 jump to 
+    ip = ip * ip 
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=17,r4,r5} = _regs) do
+# addi 4 2 4
+    r4 = r4 + 2
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=18,r4,r5} = _regs) do
+# mulr 4 4 4
+    r4 = r4 * r4
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=19,r4,r5} = _regs) do
+# mulr 3 4 4
+    r4 = ip * r4
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=20,r4,r5} = _regs) do
+# muli 4 11 4
+    r4 = 11 * r4
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=21,r4,r5} = _regs) do
+# addi 1 6 1
+    r1 = 6 + r1
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=22,r4,r5} = _regs) do
+# mulr 1 3 1
+    r1 = ip * r1
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=23,r4,r5} = _regs) do
+# addi 1 10 1
+    r1 = 10 + r1
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=24,r4,r5} = _regs) do
+# addr 4 1 4
+    r4 = r1 + r4
+    ip = ip + 1
+    elixired({r0,r1,r2,ip,r4,r5})
+  end
+
+  defp elixired({r0,r1,r2,ip=25,r4,r5} = _regs) do
+# addr 3 0 3
+    ip = r0 + ip
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+
+  defp elixired({r0,r1,r2,_ip=26,r4,r5} = _regs) do
+# seti 0 0 3
+    ip = r0 
+    ip = ip + 1
+    {r0,r1,r2,ip,r4,r5} |> elixired()
+  end
+  
+  defp equal(x,x), do: 1
+  defp equal(_,_), do: 0
+
+  defp greater(a,b) when a > b, do: 1
+  defp greater(_,_), do: 0
+
+
+  def execute([{:ip, ipr} | instructions], initial_registers) do
+    execute(to_indexed_map(instructions), {Enum.at(initial_registers, ipr), initial_registers, ipr})
   end
 
   def execute(instruction_map, {ip, regs, ipr}) do
@@ -187,7 +401,7 @@ defmodule Day19 do
         regs = Device.store(regs, ipr, ip)
         new_regs = Device.step(regs, next_instruction)
 
-        if hd(regs) != hd(new_regs) do
+        if hd(regs) != hd(new_regs) or ip == 0 do
           IO.puts(
             "ip(#{ipr})=#{ip} #{inspect(regs)} #{inspect(next_instruction)} #{inspect(new_regs)}"
           )
